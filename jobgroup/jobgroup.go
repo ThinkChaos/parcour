@@ -1,7 +1,6 @@
 // Package jobgroup provides building blocks for structured concurrency, and composable concurrency patterns.
 package jobgroup
 
-//nolint:lll
 //go:generate mockgen -source=jobgroup.go -destination jobgroup_mock_test.go -package jobgroup github.com/ThinkChaos/parcour/jobgroup JobGroup,jobGroup
 
 import (
