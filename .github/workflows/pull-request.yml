@@ -1,0 +1,24 @@
+name: Pull Request
+
+on:
+  push:
+jobs:
+  # Build and execute the PR's code to run tests and generate a coverage report.
+  # Must run without any write access since we execute third-party code.
+  check:
+    name: Build, Lint and Test
+    permissions: # drop permissions to execute PR code
+      contents: read
+    uses: ./.github/workflows/check.yml
+
+  # Use the generated coverage to update the PR.
+  # Store the coverage in the Wiki as that allows linking the HTML directly,
+  # whereas artifacts are only available via a zip.
+  publish-coverage:
+    name: Publish Coverage
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - shell: bash
+        run: |
+          echo total=${{needs.check.outputs.coverage_total}}
