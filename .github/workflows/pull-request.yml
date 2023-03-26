@@ -2,6 +2,14 @@ name: Pull Request
 
 on:
   push:
+
+permissions:
+  contents: write
+
+env:
+  # PR_NUMBER: ${{ github.event.pull_request.number }}
+  PR_NUMBER: 1
+
 jobs:
   # Build and execute the PR's code to run tests and generate a coverage report.
   # Must run without any write access since we execute third-party code.
@@ -22,12 +30,36 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
+      - name: Fetch and checkout Wiki
+        uses: actions/checkout@v3
+        with:
+          repository: ${{github.repository}}.wiki
+          fetch-depth: 0 # fetch the coverage branch, without failing if it doesn't exist
+
       - uses: actions/download-artifact@v3
         with:
           name: coverage-report
 
       - name: Save Coverage to Wiki
         shell: bash
+        env:
+          COVERAGE_BRANCH: data/coverage
+          # COVERAGE_DIR: pr/${{ github.event.pull_request.number }}
+          COVERAGE_DIR: pr/1
         run: |
-          ls -lA ${{ needs.check.outputs.coverage-html }}
-          ls -lA ${{ needs.check.outputs.coverage-out }}
+          set -x
+          # Move files into place
+          mkdir -p "$COVERAGE_DIR"
+          mv '${{ needs.check.outputs.coverage-out }}' '${{ needs.check.outputs.coverage-html }}' "$COVERAGE_DIR"
+
+          # Checkout or create branch
+          git checkout -b "$COVERAGE_BRANCH" origin/"$COVERAGE_BRANCH" || (git checkout --orphan "$COVERAGE_BRANCH" && git reset)
+
+          git diff-index --quiet HEAD -- "$COVERAGE_DIR" && exit # skip if there's nothing to commit
+          git add -v -- "$COVERAGE_DIR"
+
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "actions@localhost"
+          git commit --message "Update PR #$PR_NUMBER coverage"
+
+          git push origin "$COVERAGE_BRANCH"
