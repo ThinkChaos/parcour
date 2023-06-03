@@ -49,6 +49,11 @@ type JobGroup interface {
 	// It also returns errors of any child group that was not handled by waiting on that group.
 	Wait() error
 
+	// WaitCtx is like `Wait`, but it returns if the context ends before the group.
+	//
+	// The returned bool is true when it waited for all jobs, false when the given context ended.
+	WaitCtx(ctx context.Context) (error, bool)
+
 	// private prevents the interface from being implemented outside this package.
 	private()
 }

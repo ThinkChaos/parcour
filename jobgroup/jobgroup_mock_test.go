@@ -98,6 +98,21 @@ func (mr *MockJobGroupMockRecorder) Wait() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Wait", reflect.TypeOf((*MockJobGroup)(nil).Wait))
 }
 
+// WaitCtx mocks base method.
+func (m *MockJobGroup) WaitCtx(ctx context.Context) (error, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitCtx", ctx)
+	ret0, _ := ret[0].(error)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// WaitCtx indicates an expected call of WaitCtx.
+func (mr *MockJobGroupMockRecorder) WaitCtx(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitCtx", reflect.TypeOf((*MockJobGroup)(nil).WaitCtx), ctx)
+}
+
 // private mocks base method.
 func (m *MockJobGroup) private() {
 	m.ctrl.T.Helper()
@@ -195,6 +210,21 @@ func (m *MockjobGroup) Wait() error {
 func (mr *MockjobGroupMockRecorder) Wait() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Wait", reflect.TypeOf((*MockjobGroup)(nil).Wait))
+}
+
+// WaitCtx mocks base method.
+func (m *MockjobGroup) WaitCtx(ctx context.Context) (error, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitCtx", ctx)
+	ret0, _ := ret[0].(error)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// WaitCtx indicates an expected call of WaitCtx.
+func (mr *MockjobGroupMockRecorder) WaitCtx(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitCtx", reflect.TypeOf((*MockjobGroup)(nil).WaitCtx), ctx)
 }
 
 // init mocks base method.

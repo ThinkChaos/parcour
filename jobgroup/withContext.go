@@ -118,7 +118,24 @@ func (g *withContext) savePanic(value any) {
 }
 
 func (g *withContext) Wait() error {
-	g.wg.Wait()
+	err, _ := g.WaitCtx(context.Background())
+
+	return err
+}
+
+func (g *withContext) WaitCtx(ctx context.Context) (error, bool) {
+	wait := make(chan struct{})
+
+	go func() {
+		g.wg.Wait()
+		close(wait)
+	}()
+
+	select {
+	case <-wait:
+	case <-ctx.Done():
+		return nil, false
+	}
 
 	// Propagate panic, if any
 	if panicVal := takeMutexValue(&g.panic); panicVal != nil {
@@ -130,7 +147,9 @@ func (g *withContext) Wait() error {
 	}
 
 	// Propagate error, if any
-	return takeMutexValue(&g.err)
+	err := takeMutexValue(&g.err)
+
+	return err, true
 }
 
 func takeMutexValue[T any](mutex *zync.Mutex[T]) T {

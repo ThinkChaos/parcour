@@ -192,7 +192,9 @@ var _ = Describe("withContext", func() {
 
 			sut.Cancel() // unblock the job
 
-			Expect(sut.Wait()).Should(MatchError(context.Canceled))
+			err, ok := sut.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(MatchError(context.Canceled))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("doesn't run the job if the context is already done", func(testCtx context.Context) {
@@ -209,7 +211,9 @@ var _ = Describe("withContext", func() {
 				return nil
 			})
 
-			Expect(sut.Wait()).Should(MatchError(context.Canceled))
+			err, ok := sut.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(MatchError(context.Canceled))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 	})
 
@@ -263,7 +267,9 @@ var _ = Describe("withContext", func() {
 				defer GinkgoRecover()
 
 				waiting <- struct{}{}
-				Expect(sut.Wait()).Should(Succeed())
+				err, ok := sut.WaitCtx(testCtx)
+				Expect(ok).Should(BeTrue())
+				Expect(err).Should(Succeed())
 				waited <- struct{}{}
 			}
 
@@ -289,7 +295,9 @@ var _ = Describe("withContext", func() {
 				return expectedErr
 			})
 
-			Expect(group.Wait()).Should(MatchError(expectedErr))
+			err, ok := group.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(MatchError(expectedErr))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("propagates the panic for a single job", func(testCtx context.Context) {
@@ -302,7 +310,7 @@ var _ = Describe("withContext", func() {
 				panic(expectedVal)
 			})
 
-			Expect(func() { _ = group.Wait() }).To(PanicWith(expectedVal))
+			Expect(func() { group.WaitCtx(testCtx) }).To(PanicWith(expectedVal))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("only propagates an error once", func(testCtx context.Context) {
@@ -315,8 +323,13 @@ var _ = Describe("withContext", func() {
 				return expectedErr
 			})
 
-			Expect(group.Wait()).Should(MatchError(expectedErr))
-			Expect(group.Wait()).Should(Succeed())
+			err, ok := group.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(MatchError(expectedErr))
+
+			err, ok = group.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(Succeed())
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("only propagates a panic once", func(testCtx context.Context) {
@@ -329,8 +342,11 @@ var _ = Describe("withContext", func() {
 				panic(expectedVal)
 			})
 
-			Expect(func() { _ = group.Wait() }).To(PanicWith(expectedVal))
-			Expect(group.Wait()).Should(Succeed())
+			Expect(func() { group.WaitCtx(testCtx) }).To(PanicWith(expectedVal))
+
+			err, ok := group.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(Succeed())
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("propagates an error even if other jobs succeed", func(testCtx context.Context) {
@@ -351,7 +367,9 @@ var _ = Describe("withContext", func() {
 				return nil
 			})
 
-			Expect(group.Wait()).Should(MatchError(expectedErr))
+			err, ok := group.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(MatchError(expectedErr))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("propagates a panic even if other jobs succeed", func(testCtx context.Context) {
@@ -372,7 +390,7 @@ var _ = Describe("withContext", func() {
 				return nil
 			})
 
-			Expect(func() { _ = group.Wait() }).To(PanicWith(expectedVal))
+			Expect(func() { group.WaitCtx(testCtx) }).To(PanicWith(expectedVal))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("propagates all errors when multiple jobs fail", func(testCtx context.Context) {
@@ -398,7 +416,9 @@ var _ = Describe("withContext", func() {
 				return expectedErr2
 			})
 
-			Expect(group.Wait()).Should(SatisfyAll(MatchError(expectedErr1), MatchError(expectedErr2)))
+			err, ok := group.WaitCtx(testCtx)
+			Expect(ok).Should(BeTrue())
+			Expect(err).Should(SatisfyAll(MatchError(expectedErr1), MatchError(expectedErr2)))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 		It("propagates all panics when multiple jobs fail", func(testCtx context.Context) {
@@ -426,9 +446,57 @@ var _ = Describe("withContext", func() {
 				panic(expectedVal2)
 			})
 
-			Expect(func() { _ = group.Wait() }).To(
+			Expect(func() { group.WaitCtx(testCtx) }).To(
 				PanicWith(SatisfyAll(HaveLen(2), ContainElements(expectedVal1, expectedVal2))),
 			)
+		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
+	})
+
+	Describe("WaitCtx", func() {
+
+		It("returns as soon as the context ends", func(testCtx context.Context) {
+			sut, _ := WithContext(testCtx)
+			defer sut.Close()
+
+			events := make(chan string)
+			defer close(events)
+
+			sut.Go(func(ctx context.Context) error {
+				events <- "job start"
+				err := blockUntilCtxDone(ctx)
+				events <- "job end"
+
+				return err
+			})
+
+			Eventually(testCtx, events).Should(Receive(Equal("job start")))
+
+			wait, _ := WithContext(testCtx)
+			// No `defer wait.Close()`: if `WaitCtx` is buggy, the test would never end
+
+			wait.Go(func(ctx context.Context) error {
+				defer GinkgoRecover()
+
+				events <- "wait start"
+				err, ok := sut.WaitCtx(ctx)
+				events <- "wait end"
+
+				Expect(ok).Should(BeFalse())
+				Expect(err).Should(Succeed())
+
+				return nil
+			})
+
+			Eventually(testCtx, events).Should(Receive(Equal("wait start")))
+			Consistently(events, 20*time.Millisecond).ShouldNot(Receive())
+
+			wait.Cancel()
+			Eventually(testCtx, events).Should(Receive(Equal("wait end")))
+
+			Consistently(events, 20*time.Millisecond).ShouldNot(Receive())
+
+			sut.Cancel()
+			Eventually(testCtx, events).Should(Receive(Equal("job end")))
 		}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 	})
 })

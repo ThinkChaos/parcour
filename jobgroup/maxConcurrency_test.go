@@ -156,8 +156,13 @@ var _ = Describe("maxConcurrency", func() {
 					Eventually(testCtx, events).Should(Receive(Equal("job 2 start")))
 					Eventually(testCtx, events).Should(Receive(Equal("job 2 end")))
 
-					Expect(sut.Wait()).Should(Succeed())
-					Expect(sutParentImpl.Wait()).Should(Succeed())
+					err, ok := sut.WaitCtx(testCtx)
+					Expect(ok).Should(BeTrue())
+					Expect(err).Should(Succeed())
+
+					err, ok = sutParentImpl.WaitCtx(testCtx)
+					Expect(ok).Should(BeTrue())
+					Expect(err).Should(Succeed())
 				}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 				It("enforces the limit on child group jobs", func(testCtx context.Context) {
@@ -200,7 +205,9 @@ var _ = Describe("maxConcurrency", func() {
 					Eventually(testCtx, events).Should(Receive(Equal("job 1 end")))
 					Eventually(testCtx, events).Should(Receive(Equal("job 2 start")))
 
-					Expect(child.Wait()).Should(Succeed())
+					err, ok := child.WaitCtx(testCtx)
+					Expect(ok).Should(BeTrue())
+					Expect(err).Should(Succeed())
 				}, SpecTimeout(100*time.Millisecond*timeoutFactor))
 
 				It("stops blocking if the group is cancelled", func(testCtx context.Context) {
@@ -260,7 +267,8 @@ var _ = Describe("maxConcurrency", func() {
 
 					Eventually(testCtx, events).Should(Receive(Equal("maxConcurrency wrapper: end")))
 
-					err := sut.Wait()
+					err, ok := sut.WaitCtx(testCtx)
+					Expect(ok).Should(BeTrue()) // false is test timeout
 					Expect(err).ShouldNot(Succeed())
 					Expect(errors.As(err, new(*JobNotStartedError))).Should(BeTrue())
 				}, SpecTimeout(500*time.Millisecond*timeoutFactor))
