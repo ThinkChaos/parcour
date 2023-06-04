@@ -41,20 +41,20 @@ func WithContext(ctx context.Context) (JobGroup, context.Context) {
 }
 
 type withContext struct {
-	wg     sync.WaitGroup
+	failures
+
+	wg sync.WaitGroup
 	ctx    context.Context //nolint:containedctx
 	cancel context.CancelFunc
-	err    zync.Mutex[error]
-	panic  zync.Mutex[[]any]
 }
 
 func newWithContext() withContext {
 	return withContext{
-		wg:     sync.WaitGroup{},
+		failures: failures{},
+
+		wg: sync.WaitGroup{},
 		ctx:    nil, // see init
 		cancel: nil, // see init
-		err:    zync.Mutex[error]{},
-		panic:  zync.Mutex[[]any]{},
 	}
 }
 
@@ -105,18 +105,6 @@ func (g *withContext) launch(job *boundJob) {
 	go job.Main()
 }
 
-func (g *withContext) saveErr(err error) {
-	g.err.WithLock(func(gErr *error) {
-		*gErr = errors.Join(*gErr, err)
-	})
-}
-
-func (g *withContext) savePanic(value any) {
-	g.panic.WithLock(func(gPanic *[]any) {
-		*gPanic = append(*gPanic, value)
-	})
-}
-
 func (g *withContext) Wait() error {
 	err, _ := g.WaitCtx(context.Background())
 
@@ -137,19 +125,47 @@ func (g *withContext) WaitCtx(ctx context.Context) (error, bool) {
 		return nil, false
 	}
 
-	// Propagate panic, if any
-	if panicVal := takeMutexValue(&g.panic); panicVal != nil {
-		if len(panicVal) == 1 {
-			panic(panicVal[0])
-		}
-
-		panic(panicVal)
-	}
-
-	// Propagate error, if any
-	err := takeMutexValue(&g.err)
+	// Propagate panics and errors, at most once
+	err := g.failures.take().propagate()
 
 	return err, true
+}
+
+type failures struct {
+	zync.Mutex[failuresData]
+}
+
+func (r *failures) saveErr(err error) {
+	r.WithLock(func(res *failuresData) {
+		res.err = append(res.err, err)
+	})
+}
+
+func (r *failures) savePanic(value any) {
+	r.WithLock(func(res *failuresData) {
+		res.panic = append(res.panic, value)
+	})
+}
+
+func (r *failures) take() failuresData {
+	return takeMutexValue(&r.Mutex)
+}
+
+type failuresData struct {
+	err   []error
+	panic []any
+}
+
+func (d failuresData) propagate() error {
+	if d.panic != nil {
+		if len(d.panic) == 1 {
+			panic(d.panic[0])
+		}
+
+		panic(d.panic)
+	}
+
+	return errors.Join(d.err...)
 }
 
 func takeMutexValue[T any](mutex *zync.Mutex[T]) T {
