@@ -1,4 +1,4 @@
-// Package zync provides generic and safer wrappers for types from the official sync module.
+// Package zync provides generic and safer wrappers for types from the standard sync module.
 package zync
 
 // UnlockFunc unlocks the mutex which returned it.

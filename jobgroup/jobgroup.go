@@ -133,7 +133,7 @@ func (j *boundJob) Main() {
 
 	if err != nil {
 		// Only save the error on the bound group.
-		// Error will be propagated to its parent, if any, on `Cancel`.
+		// Error will be propagated to its parent, if any, on `Close`.
 		j.group.saveErr(err)
 	}
 }

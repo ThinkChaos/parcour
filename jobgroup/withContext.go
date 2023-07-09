@@ -62,7 +62,7 @@ func (g *withContext) private() {}
 
 // Set `ctx` (and `cancel`) as a second step so we already have a stable address
 // that can be stored in the context.
-// If we did this from a function returning a `jobGroup` (no pointer), then the
+// If we did this from a function returning a `withContext` (no pointer), then the
 // address would change and the one in the context would point to an old value.
 // The alternative to `init` is always storing `jobGroup` as a pointer.
 func (g *withContext) init(ctx context.Context, selfWrapped JobGroup) {
