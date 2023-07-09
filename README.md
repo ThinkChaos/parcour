@@ -19,6 +19,10 @@ The zync module exposes basic synchronization primitives based on their counterp
 that are less error prone and use generics.  
 See each type's documentation for details.
 
+### Atomix
+
+The `zync/atomix` module exposes wrappers for `sync/atomic`.
+
 ## Stability
 
 In accordance with semantic versioning, no stability guarantees are made for `0.x` releases.  
