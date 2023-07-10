@@ -4,7 +4,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  pull-requests: write
 
 jobs:
   # Build and execute the PR's code to run tests and generate a coverage report.
@@ -15,8 +15,8 @@ jobs:
       contents: read
     uses: ./.github/workflows/check.yml
     with:
-      fetch-url: ${{ github.event.pull_request.head.repo.clone_url }}
-      fetch-sha: ${{ github.event.pull_request.head.sha }}
+      repository: ${{ github.event.pull_request.head.repo.name }}
+      ref: ${{ github.event.pull_request.head.ref }}
 
   # Use the generated coverage to update the PR.
   # Store the coverage in the Wiki as that allows linking the HTML directly,

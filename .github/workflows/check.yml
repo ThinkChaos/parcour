@@ -3,10 +3,10 @@ name: Check
 on:
   workflow_call:
     inputs:
-      fetch-url:
+      repository:
         type: string
-        default: ${{ github.repositoryUrl }}
-      fetch-sha:
+        default: ${{ github.repository }}
+      ref:
         type: string
         default: ${{ github.sha }}
 
@@ -45,8 +45,8 @@ jobs:
       - name: Fetch and checkout
         uses: actions/checkout@v3
         with:
-          repository: ${{ inputs.fetch-url }}
-          ref: ${{ inputs.fetch-sha }}
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.ref }}
 
       - name: Setup Go
         uses: actions/setup-go@v4
