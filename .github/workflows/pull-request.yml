@@ -10,7 +10,7 @@ jobs:
   # Build and execute the PR's code to run tests and generate a coverage report.
   # Must run without any write access since we execute untrusted code (from the PR creator).
   check:
-    name: Build, Lint and Test
+    name: Check
     permissions: # drop permissions to execute PR code
       contents: read
     uses: ./.github/workflows/check.yml
@@ -26,20 +26,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - name: Fetch and checkout
-        uses: actions/checkout@v3
-
       - uses: actions/download-artifact@v3
         with:
-          name: coverage-report
+          name: ${{ needs.check.outputs.coverage-artifact }}
 
       - name: Setup LCOV
         uses: hrishikesh-kadam/setup-lcov@v1
 
+      - name: Fetch and checkout # lcov needs the sources
+        uses: actions/checkout@v3
+
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v3
         with:
-          coverage-files: coverage.lcov.info
+          coverage-files: ${{ needs.check.outputs.coverage-lcov }}
           minimum-coverage: 75
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-comment: true

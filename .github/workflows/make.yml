@@ -1,0 +1,37 @@
+name: make
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+        default: ${{ github.repository }}
+      ref:
+        type: string
+        default: ${{ github.sha }}
+
+      target:
+        type: string
+        required: true
+      args:
+        type: string
+        default: ""
+
+jobs:
+  make:
+    name: ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch and checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+
+      - name: make ${{ inputs.target }}
+        run: make ${{ inputs.args }} ${{ inputs.target }}

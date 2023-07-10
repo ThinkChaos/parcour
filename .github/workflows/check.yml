@@ -14,67 +14,32 @@ on:
       artifacts-dir:
         type: string
         default: ./.github/artifacts
-      coverage-out:
-        type: string
-        default: coverage.out
-      coverage-html:
-        type: string
-        default: coverage.html
       coverage-lcov:
         type: string
         default: coverage.lcov.info
+      coverage-artifact:
+        type: string
+        default: test-coverage-report
 
     outputs:
-      coverage_total:
-        value: ${{ jobs.check.outputs.coverage_total }}
-
-      coverage-out:
-        value: ${{ inputs.coverage-out }}
-      coverage-html:
-        value: ${{ inputs.coverage-html }}
-      coverage-lcov:
+      coverage-artifact: # artifact name
+        value: ${{ inputs.coverage-artifact }}
+      coverage-lcov: # file name in artifact
         value: ${{ inputs.coverage-lcov }}
 
 jobs:
-  check:
-    name: check
-    runs-on: ubuntu-latest
-    outputs:
-      coverage_total: ${{ steps.coverage.outputs.total }}
-    steps:
-      - name: Fetch and checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ inputs.repo }}
-          ref: ${{ inputs.ref }}
+  build:
+    name: Build
+    uses: ./.github/workflows/make.yml
+    with:
+      repository: ${{ inputs.repository }}
+      ref: ${{ inputs.ref }}
+      target: build
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: go.mod
-
-      - name: Coverage
-        id: coverage
-        if: ${{ github.event_name }} == pull_request
-        shell: bash
-        env:
-          COVERAGE_OUT: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-out }}
-          COVERAGE_HTML: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-html }}
-        run: |
-          mkdir -p '${{ inputs.artifacts-dir }}'
-
-          go test -coverprofile="$COVERAGE_OUT" ./...
-          go tool cover -html="$COVERAGE_OUT" -o="$COVERAGE_HTML"
-
-          TOTAL="$(go tool cover -func="$COVERAGE_OUT" | tail -1 | grep -Eo '[0-9]+\.[0-9]')"
-          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
-
-      - uses: jandelgado/gcov2lcov-action@v1
-        with:
-          infile: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-out }}
-          outfile: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-lcov }}
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: ${{ inputs.artifacts-dir }}
+  lint:
+    name: Lint
+    uses: ./.github/workflows/make.yml
+    with:
+      repository: ${{ inputs.repository }}
+      ref: ${{ inputs.ref }}
+      target: lint
