@@ -6,13 +6,9 @@ on:
 permissions:
   contents: write
 
-env:
-  # PR_NUMBER: ${{ github.event.pull_request.number }}
-  PR_NUMBER: 1
-
 jobs:
   # Build and execute the PR's code to run tests and generate a coverage report.
-  # Must run without any write access since we execute third-party code.
+  # Must run without any write access since we execute untrusted code (from the PR creator).
   check:
     name: Build, Lint and Test
     permissions: # drop permissions to execute PR code
@@ -30,36 +26,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - name: Fetch and checkout Wiki
+      - name: Fetch and checkout
         uses: actions/checkout@v3
-        with:
-          repository: ${{github.repository}}.wiki
-          fetch-depth: 0 # fetch the coverage branch, without failing if it doesn't exist
 
       - uses: actions/download-artifact@v3
         with:
           name: coverage-report
 
-      - name: Save Coverage to Wiki
-        shell: bash
-        env:
-          COVERAGE_BRANCH: data/coverage
-          # COVERAGE_DIR: pr/${{ github.event.pull_request.number }}
-          COVERAGE_DIR: pr/1
-        run: |
-          set -x
-          # Move files into place
-          mkdir -p "$COVERAGE_DIR"
-          mv '${{ needs.check.outputs.coverage-out }}' '${{ needs.check.outputs.coverage-html }}' "$COVERAGE_DIR"
+      - name: Setup LCOV
+        uses: hrishikesh-kadam/setup-lcov@v1
 
-          # Checkout or create branch
-          git checkout -b "$COVERAGE_BRANCH" origin/"$COVERAGE_BRANCH" || (git checkout --orphan "$COVERAGE_BRANCH" && git reset)
-
-          git diff-index --quiet HEAD -- "$COVERAGE_DIR" && exit # skip if there's nothing to commit
-          git add -v -- "$COVERAGE_DIR"
-
-          git config --local user.name "GitHub Actions"
-          git config --local user.email "actions@localhost"
-          git commit --message "Update PR #$PR_NUMBER coverage"
-
-          git push origin "$COVERAGE_BRANCH"
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v3
+        with:
+          coverage-files: coverage.lcov.info
+          minimum-coverage: 75
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true

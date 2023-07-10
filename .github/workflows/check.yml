@@ -11,15 +11,18 @@ on:
         default: ${{ github.sha }}
 
       # Internal vars
-      coverage-dir:
+      artifacts-dir:
         type: string
-        default: ./coverage
+        default: ./.github/artifacts
       coverage-out:
         type: string
         default: coverage.out
       coverage-html:
         type: string
         default: coverage.html
+      coverage-lcov:
+        type: string
+        default: coverage.lcov.info
 
     outputs:
       coverage_total:
@@ -29,6 +32,8 @@ on:
         value: ${{ inputs.coverage-out }}
       coverage-html:
         value: ${{ inputs.coverage-html }}
+      coverage-lcov:
+        value: ${{ inputs.coverage-lcov }}
 
 jobs:
   check:
@@ -53,10 +58,10 @@ jobs:
         if: ${{ github.event_name }} == pull_request
         shell: bash
         env:
-          COVERAGE_OUT: ${{ inputs.coverage-dir }}/${{ inputs.coverage-out }}
-          COVERAGE_HTML: ${{ inputs.coverage-dir }}/${{ inputs.coverage-html }}
+          COVERAGE_OUT: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-out }}
+          COVERAGE_HTML: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-html }}
         run: |
-          mkdir -p '${{ inputs.coverage-dir }}'
+          mkdir -p '${{ inputs.artifacts-dir }}'
 
           go test -coverprofile="$COVERAGE_OUT" ./...
           go tool cover -html="$COVERAGE_OUT" -o="$COVERAGE_HTML"
@@ -64,7 +69,12 @@ jobs:
           TOTAL="$(go tool cover -func="$COVERAGE_OUT" | tail -1 | grep -Eo '[0-9]+\.[0-9]')"
           echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
 
+      - uses: jandelgado/gcov2lcov-action@v1
+        with:
+          infile: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-out }}
+          outfile: ${{ inputs.artifacts-dir }}/${{ inputs.coverage-lcov }}
+
       - uses: actions/upload-artifact@v3
         with:
           name: coverage-report
-          path: ${{ inputs.coverage-dir }}
+          path: ${{ inputs.artifacts-dir }}
