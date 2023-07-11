@@ -28,10 +28,18 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.ref }}
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: go.mod
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v1
+
+      - name: Build devShell
+        run: |
+          nix develop --command \
+            true # noop
 
       - name: make ${{ inputs.target }}
-        run: make ${{ inputs.args }} ${{ inputs.target }}
+        run: |
+          nix develop --command \
+            make ${{ inputs.args }} ${{ inputs.target }}
