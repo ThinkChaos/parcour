@@ -16,7 +16,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
-        rec {
+        {
           packages.gcov2lcov = pkgs.buildGoModule rec {
             pname = "gcov2lcov";
             version = "1.0.5";
@@ -43,14 +43,6 @@
               go
               golangci-lint
               mockgen
-            ];
-          };
-
-          devShells.ci = pkgs.mkShell {
-            name = "CI environment";
-
-            nativeBuildInputs = with pkgs; devShells.default.nativeBuildInputs ++ [
-              lcov
             ];
           };
         }

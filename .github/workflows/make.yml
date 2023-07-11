@@ -45,12 +45,12 @@ jobs:
 
       - name: Build devShell
         run: |
-          nix develop .#ci --command \
+          nix develop --command \
             true # noop
 
       - name: make ${{ inputs.target }}
         run: |
-          nix develop .#ci --command \
+          nix develop --command \
             make ${{ inputs.args }} ${{ inputs.target }}
 
       - uses: actions/upload-artifact@v3
