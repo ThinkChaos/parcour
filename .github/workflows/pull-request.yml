@@ -25,6 +25,7 @@ jobs:
     name: Publish Coverage
     runs-on: ubuntu-latest
     needs: check
+    if: always() # job failure might not be due to tests (there doesn't seem to be a more precise way to check)
     steps:
       - uses: actions/download-artifact@v3
         with:
