@@ -1,0 +1,60 @@
+name: make
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+        default: ${{ github.repository }}
+      ref:
+        type: string
+        default: ${{ github.sha }}
+
+      name:
+        type: string
+        default: ""
+      target:
+        type: string
+        required: true
+      args:
+        type: string
+        default: ""
+      artifact-name:
+        type: string
+        default: ""
+      artifact-path:
+        type: string
+        default: ""
+
+jobs:
+  make:
+    name: ${{ inputs.name || inputs.target }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch and checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.ref }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v1
+
+      - name: Build devShell
+        run: |
+          nix develop --command \
+            true # noop
+
+      - name: make ${{ inputs.target }}
+        run: |
+          nix develop --command \
+            make ${{ inputs.args }} ${{ inputs.target }}
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ inputs.artifact-path }}
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}

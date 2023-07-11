@@ -1,0 +1,107 @@
+linters:
+  # enable:
+  #   - asciicheck
+  #   - bidichk
+  #   - bodyclose
+  #   - depguard
+  #   - dogsled
+  #   - dupl
+  #   - durationcheck
+  #   - errcheck
+  #   - errchkjson
+  #   - errorlint
+  #   - exhaustive
+  #   - exportloopref
+  #   - funlen
+  #   - gochecknoglobals
+  #   - gochecknoinits
+  #   - gocognit
+  #   - goconst
+  #   - gocritic
+  #   - gocyclo
+  #   - godox
+  #   - gofmt
+  #   - goimports
+  #   - gomnd
+  #   - gomodguard
+  #   - gosec
+  #   - gosimple
+  #   - govet
+  #   - grouper
+  #   - importas
+  #   - ineffassign
+  #   - lll
+  #   - makezero
+  #   - misspell
+  #   - nakedret
+  #   - nestif
+  #   - nilerr
+  #   - nilnil
+  #   - nlreturn
+  #   - nolintlint
+  #   - nosprintfhostport
+  #   - prealloc
+  #   - predeclared
+  #   - revive
+  #   - sqlclosecheck
+  #   - staticcheck
+  #   - stylecheck
+  #   - tenv
+  #   - typecheck
+  #   - unconvert
+  #   - unparam
+  #   - unused
+  #   - usestdlibvars
+  #   - wastedassign
+  #   - whitespace
+  #   - wsl
+  disable:
+    - ireturn # https://github.com/go-proverbs/go-proverbs.github.io/issues/37#issuecomment-571345739
+    - nonamedreturns
+    - testpackage
+  #   - noctx
+  #   - contextcheck
+  #   - scopelint
+  #   - structcheck
+  #   - deadcode
+  #   - varcheck
+  #   - forbidigo
+
+  enable-all: true
+  # disable-all: false
+  # presets:
+  #   - bugs
+  #   - comment
+  #   - complexity
+  #   - error
+  #   - format
+  #   - import
+  #   - metalinter
+  #   - module
+  #   - performance
+  #   - sql
+  #   - style
+  #   - test
+  #   - unused
+  fast: false
+
+linters-settings:
+  wsl:
+    # allow-trailing-comment: true
+    # allow-separated-leading-comment: true
+    force-err-cuddling: true
+#   gomnd:
+#     ignored-numbers:
+#       - '0666'
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - forcetypeassert
+        - goerr113
+        - gosec
+        - nlreturn
+        - varnamelen
