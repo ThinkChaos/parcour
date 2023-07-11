@@ -10,16 +10,25 @@ on:
         type: string
         default: ${{ github.sha }}
 
+      name:
+        type: string
+        default: ""
       target:
         type: string
         required: true
       args:
         type: string
         default: ""
+      artifact-name:
+        type: string
+        default: ""
+      artifact-path:
+        type: string
+        default: ""
 
 jobs:
   make:
-    name: ${{ inputs.target }}
+    name: ${{ inputs.name || inputs.target }}
     runs-on: ubuntu-latest
     steps:
       - name: Fetch and checkout
@@ -43,3 +52,9 @@ jobs:
         run: |
           nix develop --command \
             make ${{ inputs.args }} ${{ inputs.target }}
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ inputs.artifact-path }}
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}

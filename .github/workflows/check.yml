@@ -11,9 +11,9 @@ on:
         default: ${{ github.sha }}
 
       # Internal vars
-      artifacts-dir:
+      coverage-dir:
         type: string
-        default: ./.github/artifacts
+        default: ./coverage
       coverage-lcov:
         type: string
         default: coverage.lcov.info
@@ -43,3 +43,15 @@ jobs:
       repository: ${{ inputs.repository }}
       ref: ${{ inputs.ref }}
       target: lint
+
+  test:
+    name: Test
+    uses: ./.github/workflows/make.yml
+    with:
+      repository: ${{ inputs.repository }}
+      ref: ${{ inputs.ref }}
+      name: test
+      target: coverage
+      args: COVERAGE_DIR=${{ inputs.coverage-dir }} COVERAGE_LCOV=${{ inputs.coverage-dir }}/${{ inputs.coverage-lcov }}
+      artifact-name: ${{ inputs.coverage-artifact }}
+      artifact-path: ${{ inputs.coverage-dir }}
