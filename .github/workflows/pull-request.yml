@@ -31,9 +31,6 @@ jobs:
         with:
           name: ${{ needs.check.outputs.coverage-artifact }}
 
-      - name: Setup LCOV
-        uses: hrishikesh-kadam/setup-lcov@v1
-
       - name: Fetch and checkout # lcov needs the sources
         uses: actions/checkout@v3
 
