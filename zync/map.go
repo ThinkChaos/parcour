@@ -17,6 +17,12 @@ type Map[K comparable, V any] struct {
 func (m *Map[K, V]) Load(key K) (value V, ok bool) {
 	val, ok := m.inner.Load(key)
 
+	if !ok {
+		var zero V
+
+		return zero, false
+	}
+
 	return val.(V), ok //nolint:forcetypeassert
 }
 
